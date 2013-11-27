@@ -1,0 +1,11 @@
+{
+  "name": "tree-watch",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "bin": {
+    "tree-watch": "./tree-watch"
+  },
+  "author": "Tom Ashworth <ta@twitter.com>",
+  "license": "BSD-2-Clause"
+}

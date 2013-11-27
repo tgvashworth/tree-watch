@@ -1,0 +1,29 @@
+#!/usr/bin/env node
+
+var spawn = require('child_process').spawn;
+var split = require('split');
+var tr = require('through');
+
+var regex = /.*/i;
+if (process.argv[3]) {
+  var arg = process.argv[3].replace('.', '\\.').replace('*', '.*');
+  regex = new RegExp(arg + '$', 'i');
+}
+
+var find = spawn('find', [process.argv[2], '-name', process.argv[3]]);
+find.stdout.pipe(process.stdout);
+find.stderr.pipe(process.stderr);
+
+find.on('close', function () {
+  var fswatch = spawn('fswatch', [process.argv[2]]);
+  fswatch.stdout
+    .pipe(split())
+    .pipe(tr(function (line) {
+      if (line.match(regex)) {
+        this.queue(line.replace(process.env.PWD, '.') + '\n');
+      }
+    }))
+    .pipe(process.stdout);
+  fswatch.stderr.pipe(process.stderr);
+});
+
