@@ -4,6 +4,12 @@ Yet another file watcher.
 
 Write to stdout all matching files, and again when they change or when new files are added.
 
+For example, if you have another tool that listens for files on stdin and does something with them:
+
+```
+$ tree-watch . "**/*.js" | jslint
+```
+
 ```
 $ npm install -g tree-watch
 ```
