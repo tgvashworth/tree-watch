@@ -2,7 +2,7 @@
 
 Yet another file watcher.
 
-Write a path to all files that match a glob within a directory to stdout, and again when they change.
+Write to stdout all matching files, and again when they change or when new files are added.
 
 ```
 $ npm install -g tree-watch
@@ -16,11 +16,29 @@ $ tree-watch . "**/*.js"
 ./lib/something.js
 ```
 
-Then when you change `index.js`:
+When you change `index.js`:
 
 ```
 ./index.js
 ```
+
+When you add `lib/another.js`:
+
+```
+./lib/another.js
+```
+
+When you delete `lib/another.js`:
+
+```
+./lib/another.js
+```
+
+You get the idea.
+
+## Options
+
+Defaults to relative paths, but supports `--absolute` flag to get full path.
 
 ## License
 
