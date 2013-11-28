@@ -1,8 +1,6 @@
 # tree-watch
 
-Yet another file watcher.
-
-Write to stdout all matching files, and again when they change or when new files are added.
+Write path of all matching files to stdout, and again when they change or when new files are added. Yep, another file watcher.
 
 For example, if you have another tool that listens for files on stdin and does something with them:
 
