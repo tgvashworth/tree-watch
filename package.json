@@ -2,7 +2,7 @@
   "name": "tree-watch",
   "version": "0.0.4",
   "description": "",
-  "main": "index.js",
+  "preferGlobal": true,
   "bin": {
     "tree-watch": "./tree-watch"
   },
