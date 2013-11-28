@@ -10,6 +10,8 @@ For example, if you have another tool that listens for files on stdin and does s
 $ tree-watch . "**/*.js" | jslint
 ```
 
+## Install
+
 ```
 $ npm install -g tree-watch
 ```
