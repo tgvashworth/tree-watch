@@ -1,29 +1,125 @@
 #!/usr/bin/env node
 
-var spawn = require('child_process').spawn;
-var split = require('split');
-var tr = require('through');
+var fs = require('fs');
+var path = require('path');
+var async = require('async');
+var minimatch = require('minimatch');
+var argv = require('optimist').argv;
 
-var regex = /.*/i;
-if (process.argv[3]) {
-  var arg = process.argv[3].replace('.', '\\.').replace('*', '.*');
-  regex = new RegExp(arg + '$', 'i');
-}
+var watchers = {};
+var files = {};
+var pattern = argv._[1] || '**/*';
 
-var find = spawn('find', [process.argv[2], '-name', process.argv[3]]);
-find.stdout.pipe(process.stdout);
-find.stderr.pipe(process.stderr);
-
-find.on('close', function () {
-  var fswatch = spawn('fswatch', [process.argv[2]]);
-  fswatch.stdout
-    .pipe(split())
-    .pipe(tr(function (line) {
-      if (line.match(regex)) {
-        this.queue(line.replace(process.env.PWD, '.') + '\n');
-      }
-    }))
-    .pipe(process.stdout);
-  fswatch.stderr.pipe(process.stderr);
+scan({
+  path: path.resolve(process.env.PWD, argv._[0] || '.')
 });
 
+/**
+ * Methods
+ */
+
+/**
+ * Log an update to a file, if we know about the file already.
+ */
+function changelog(root, event, filename) {
+  if (!filename) return;
+  var abspath = rootpath(filename, root);
+  if (files[abspath]) {
+    var filepath = mkpath(filename, root);
+    if (argv.absolute) filepath = abspath;
+    process.stdout.write(filepath + '\n');
+  }
+}
+
+/**
+ * Watch a particular root (directory) and, when things change, log and rescan.
+ */
+function watch(root, done) {
+  if (watchers[root.path]) return done(null, false);
+
+  watchers[root.path] = fs.watch(root.path, function (event, filename) {
+    changelog(root, event, filename);
+    scan(root);
+  });
+
+  watchers[root.path].on('error', function (why) {
+    process.stderr.write("Error: " + (why.message || why).toString());
+    delete watchers[root.path];
+  });
+
+  return done(null, true);
+}
+
+/**
+ * Scan a root (directory). Watches it, then reads children. Recursively scans child directories
+ * and logs new files that it finds.
+ */
+function scan(root, done) {
+  done = done || function () {};
+  watch(root, function (err, wasNew) {
+    if (err) throw err;
+
+    // Grab the children
+    fs.readdir(root.path, function (err, children) {
+      if (err) throw err;
+
+      // Get full paths for each of the children
+      var paths = children.map(function (child) {
+        return rootpath(child, root);
+      });
+
+      // Stat them to figure out what they are
+      async.map(paths, fs.stat, function (err, stats) {
+        if (err) throw err;
+
+        // Make a more useful entity object
+        var entities = stats.map(function (stat, i) {
+          return { path: paths[i], stat: stat };
+        });
+
+        // Grab all the directories and scan 'em
+        var dirs = entities.filter(isDir);
+        async.each(dirs, scan, done);
+
+        // Grab the file entities and log them if they're new
+        entities.filter(isFile).forEach(function (entity) {
+          if (files[entity.path]) return;
+          if (minimatch(entity.path, pattern)) {
+            files[entity.path] = entity.path;
+            var filepath = mkpath(entity.path);
+            if (argv.absolute) filepath = entity.path;
+            process.stdout.write(filepath + '\n')
+          }
+        });
+      });
+
+    });
+
+  });
+}
+
+/**
+ * Utilities
+ */
+
+// Resolve a filename and a root
+function rootpath(filename, root) {
+  return path.resolve(root.path, filename);
+}
+
+// Make a path relative to the current working directory
+function mkpath(filename, root) {
+  var base = filename;
+  if (root) {
+    base = rootpath(filename, root);
+  }
+  return base.replace(process.env.PWD, '.')
+}
+
+function isDir(entity) {
+  return entity.stat.isDirectory();
+}
+
+function isFile(entity) {
+  return entity.stat.isFile();
+}
