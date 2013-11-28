@@ -9,7 +9,6 @@
   "author": "Tom Ashworth <ta@twitter.com>",
   "license": "BSD-2-Clause",
   "dependencies": {
-    "watch": "~0.8.0",
     "minimatch": "~0.2.12",
     "async": "~0.2.9",
     "optimist": "~0.6.0"
